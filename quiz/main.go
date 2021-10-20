@@ -4,12 +4,15 @@ import (
 	csv "encoding/csv"
 	"fmt"
 	"os"
+	"time"
 )
 
 type question struct {
 	question         string
 	expectedResponse string
 }
+
+var messages chan string = make(chan string)
 
 func readCSV(filename string) ([][]string, error) {
 	f, err := os.Open(filename)
@@ -50,11 +53,23 @@ func mapLinesToStructList(filename string) ([]question, error) {
 	return resultList, nil
 }
 
+func timer() {
+	timer := time.NewTimer(time.Second * 5)
+	defer timer.Stop()
+	messages <- "Tick"
+	//stopped := timer.Stop()
+
+	/*if stopped {
+		messages <- "ended"
+	}*/
+}
+
 func runGame(questions []question) (bool, int) {
 	alive := true
 	score := 0
 
 	for _, question := range questions {
+		go timer()
 		fmt.Println(question.question)
 		var answer string
 		fmt.Scan(&answer)
@@ -78,14 +93,23 @@ func main() {
 		fmt.Println("Ups, somethings went wrong.", err)
 	}
 
-	gameResult, score := runGame(questions)
+	go runGame(questions)
+	for {
+		msg := <-messages
+		fmt.Println(msg)
+		/*if msg == "stop" {
+			break
+		} */
+	}
 
-	if gameResult {
+	// gameResult, score := runGame(questions)
+
+	/*if gameResult {
 		fmt.Println("Congratulations, you won!")
 	} else {
 		fmt.Println("You lost!")
-	}
+	}*/
 
-	fmt.Printf("Final score of %d \n", score)
+	//fmt.Printf("Final score of %d \n", score)
 	fmt.Println("Thank you for playing!")
 }
